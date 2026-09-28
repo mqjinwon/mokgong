@@ -5,7 +5,17 @@ import React from "react";
 export function BetaBanner() {
   return (
     <div className="p-3 rounded-[8px] bg-amber-50 border border-amber-200 text-amber-800 text-[13px] leading-[1.5]">
-      <strong>BETA</strong> — 용량이 큰 영상(&gt;100MB)은 느릴 수 있어요. 모든 처리는 브라우저 안에서 일어납니다.
+      <div className="flex items-start gap-2">
+        <span className="font-bold shrink-0">BETA</span>
+        <div className="space-y-1">
+          <p>모든 처리는 브라우저 안에서 진행됩니다 — 서버에 업로드되지 않아요.</p>
+          <ul className="text-[12px] opacity-80 list-disc list-inside space-y-0.5">
+            <li>권장: 100MB 이하, 5분 이하 영상</li>
+            <li>첫 사용 시 FFmpeg 로딩에 10~30초 소요</li>
+            <li>브라우저 탭을 닫지 마세요</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }

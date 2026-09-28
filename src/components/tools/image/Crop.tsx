@@ -7,13 +7,15 @@ import { FileDrop } from "@/components/ui/FileDrop";
 import { loadImage, canvasToBlob } from "@/lib/imageUtils";
 import { downloadBlob } from "@/lib/download";
 
-type AspectRatio = "free" | "1:1" | "4:3" | "16:9";
+type AspectRatio = "free" | "1:1" | "4:3" | "16:9" | "9:16" | "3:2";
 
 const RATIOS: { label: string; value: AspectRatio }[] = [
   { label: "Free", value: "free" },
   { label: "1:1", value: "1:1" },
   { label: "4:3", value: "4:3" },
   { label: "16:9", value: "16:9" },
+  { label: "9:16", value: "9:16" },
+  { label: "3:2", value: "3:2" },
 ];
 
 interface Props {
@@ -190,7 +192,7 @@ export function CropTool({ initialFile }: Props) {
           <div className="w-full lg:w-56 flex flex-col gap-4">
             <div>
               <div className="text-[12px] font-mono text-[var(--color-muted)] mb-2">비율</div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 {RATIOS.map((r) => (
                   <button
                     key={r.value}

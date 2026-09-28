@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
@@ -29,6 +29,14 @@ export function CropTool({ initialFile }: Props) {
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const videoUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+
+  useEffect(() => {
+    return () => {
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+    };
+  }, [videoUrl]);
 
   const drawFrame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -162,11 +170,10 @@ export function CropTool({ initialFile }: Props) {
             {/* Hidden video for frame extraction */}
             <video
               ref={videoRef}
-              src={URL.createObjectURL(file)}
+              src={videoUrl ?? undefined}
               onLoadedMetadata={handleVideoLoaded}
               onSeeked={handleSeeked}
               className="hidden"
-              crossOrigin="anonymous"
               preload="auto"
             />
             <canvas
