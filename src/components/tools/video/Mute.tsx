@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Download, RotateCcw, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
-import { BetaBanner, SizeWarning, ProgressBar, DropZone } from "./shared";
+import { RemuxBetaBanner, RemuxSizeWarning, ProgressBar, DropZone } from "./shared";
+import { canAttemptRemux } from "@/lib/video/remux";
 
 interface Props {
   initialFile?: File | null;
@@ -16,6 +17,9 @@ export function MuteTool({ initialFile }: Props) {
   const [progress, setProgress] = useState(0);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [error, setError] = useState("");
+  const [usedMethod, setUsedMethod] = useState<"remux" | "ffmpeg" | null>(null);
+
+  const isRemuxCapable = useMemo(() => file ? canAttemptRemux(file) : false, [file]);
 
   async function handleRun() {
     if (!file) return;
@@ -23,7 +27,23 @@ export function MuteTool({ initialFile }: Props) {
     setProgress(0);
     setError("");
     setResultBlob(null);
+    setUsedMethod(null);
+
     try {
+      if (isRemuxCapable) {
+        try {
+          const { remuxMute } = await import("@/lib/video/remux");
+          const result = await remuxMute(file, (p) => setProgress(Math.round(p * 100)));
+          setResultBlob(result.blob);
+          setUsedMethod("remux");
+          setProgress(100);
+          return;
+        } catch (remuxError) {
+          console.warn("Remux failed, falling back to FFmpeg:", remuxError);
+          setProgress(0);
+        }
+      }
+
       const { runFFmpeg } = await import("@/lib/ffmpeg");
       const blob = await runFFmpeg(
         ["-i", "INPUT", "-c:v", "copy", "-an", "OUTPUT"],
@@ -33,6 +53,7 @@ export function MuteTool({ initialFile }: Props) {
         (p) => setProgress(Math.round(p.progress * 100))
       );
       setResultBlob(blob);
+      setUsedMethod("ffmpeg");
       setProgress(100);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -51,7 +72,7 @@ export function MuteTool({ initialFile }: Props) {
   if (!file) {
     return (
       <div className="flex flex-col gap-4">
-        <BetaBanner />
+        <RemuxBetaBanner isRemuxCapable={false} toolType="mute" />
         <DropZone accept="video/*" onFile={setFile} label="동영상 파일을 선택하세요" />
       </div>
     );
@@ -59,8 +80,8 @@ export function MuteTool({ initialFile }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <BetaBanner />
-      <SizeWarning file={file} />
+      <RemuxBetaBanner isRemuxCapable={isRemuxCapable} toolType="mute" />
+      <RemuxSizeWarning file={file} isRemuxCapable={isRemuxCapable} />
       {error && (
         <div className="p-3 rounded-[8px] bg-red-50 border border-red-200 text-red-700 text-[13px]">{error}</div>
       )}
@@ -81,7 +102,14 @@ export function MuteTool({ initialFile }: Props) {
 
           {resultBlob && (
             <div className="p-4 rounded-[12px] bg-[var(--color-accent-soft)] border border-[var(--color-accent)]/20">
-              <div className="font-semibold text-[14px] mb-2">결과 (음소거됨)</div>
+              <div className="font-semibold text-[14px] mb-2">
+                결과 (음소거됨)
+                {usedMethod && (
+                  <span className="ml-2 text-[11px] font-normal text-[var(--color-muted)]">
+                    {usedMethod === "remux" ? "스트리밍 처리" : "FFmpeg"}
+                  </span>
+                )}
+              </div>
               <video
                 src={URL.createObjectURL(resultBlob)}
                 controls
