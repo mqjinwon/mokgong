@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Download, RotateCcw, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
@@ -11,19 +11,11 @@ interface Props {
 }
 
 export function MuteTool({ initialFile }: Props) {
-  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [file, setFile] = useState<File | null>(() => initialFile ?? null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [error, setError] = useState("");
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    if (initialFile) setFile(initialFile);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function handleRun() {
     if (!file) return;

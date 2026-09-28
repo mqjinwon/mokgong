@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function Mp4ToGifTool({ initialFile }: Props) {
-  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [file, setFile] = useState<File | null>(() => initialFile ?? null);
   const [fps, setFps] = useState<10 | 15 | 24>(15);
   const [width, setWidth] = useState(480);
   const [startSec, setStartSec] = useState(0);
@@ -20,14 +20,6 @@ export function Mp4ToGifTool({ initialFile }: Props) {
   const [progress, setProgress] = useState(0);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [error, setError] = useState("");
-  const initialized = useRef(false);
-
-  React.useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    if (initialFile) setFile(initialFile);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function handleRun() {
     if (!file) return;
@@ -101,6 +93,7 @@ export function Mp4ToGifTool({ initialFile }: Props) {
           {resultBlob && (
             <div className="p-4 rounded-[12px] bg-[var(--color-accent-soft)] border border-[var(--color-accent)]/20">
               <div className="font-semibold text-[14px] mb-2">결과 GIF</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={URL.createObjectURL(resultBlob)} alt="result gif" className="w-full rounded-[8px] max-h-[300px] object-contain" />
             </div>
           )}

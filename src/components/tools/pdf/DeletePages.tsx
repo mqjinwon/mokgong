@@ -118,6 +118,7 @@ export function DeletePagesTool({ initialFile }: Props) {
                   className={`flex flex-col items-center gap-1 cursor-pointer group`}
                 >
                   <div className={`relative rounded border-2 transition-all ${marked.has(i) ? "border-red-400" : "border-[var(--color-border)] hover:border-[var(--color-accent)]"}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={src} alt={`p${i + 1}`} className="h-20 rounded object-contain bg-white" />
                     {marked.has(i) && (
                       <div className="absolute inset-0 bg-red-400/30 rounded flex items-center justify-center">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function ResizeTool({ initialFile }: Props) {
-  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [file, setFile] = useState<File | null>(() => initialFile ?? null);
   const [origW, setOrigW] = useState(0);
   const [origH, setOrigH] = useState(0);
   const [targetW, setTargetW] = useState(0);
@@ -21,14 +21,6 @@ export function ResizeTool({ initialFile }: Props) {
   const [progress, setProgress] = useState(0);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [error, setError] = useState("");
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    if (initialFile) setFile(initialFile);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   function handleVideoLoaded(e: React.SyntheticEvent<HTMLVideoElement>) {
     const v = e.currentTarget;

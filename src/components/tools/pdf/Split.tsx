@@ -138,6 +138,7 @@ export function SplitTool({ initialFile }: Props) {
             <div className="flex flex-wrap gap-2">
               {thumbnails.map((src, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt={`p${i + 1}`} className="h-20 rounded border border-[var(--color-border)] object-contain bg-white" />
                   <span className="text-[10px] font-mono text-[var(--color-muted)]">{i + 1}</span>
                 </div>

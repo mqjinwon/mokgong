@@ -116,6 +116,7 @@ export function RotateTool({ initialFile }: Props) {
               {thumbnails.map((src, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
                   <div className="relative rounded border border-[var(--color-border)] bg-white">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
                       alt={`p${i + 1}`}
