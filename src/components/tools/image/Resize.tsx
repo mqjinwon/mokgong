@@ -13,6 +13,15 @@ interface Props {
 
 type Unit = "px" | "%";
 
+const ASPECT_PRESETS = [
+  { label: "원본", ratio: null },
+  { label: "1:1", ratio: 1 },
+  { label: "16:9", ratio: 16 / 9 },
+  { label: "4:3", ratio: 4 / 3 },
+  { label: "3:2", ratio: 3 / 2 },
+  { label: "9:16", ratio: 9 / 16 },
+] as const;
+
 export function ResizeTool({ initialFile }: Props) {
   const [file, setFile] = useState<File | null>(initialFile ?? null);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
@@ -62,7 +71,7 @@ export function ResizeTool({ initialFile }: Props) {
   }
 
   async function handleResize() {
-    if (!img) return;
+    if (!img || !file) return;
     let tw = parseFloat(width);
     let th = parseFloat(height);
     if (unit === "%") { tw = img.width * tw / 100; th = img.height * th / 100; }
@@ -73,7 +82,8 @@ export function ResizeTool({ initialFile }: Props) {
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await canvasToBlob(canvas, "image/png");
-    downloadBlob(blob, "resized.png");
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    downloadBlob(blob, `${baseName}_${Math.round(tw)}x${Math.round(th)}.png`);
   }
 
   function reset() {
@@ -119,6 +129,34 @@ export function ResizeTool({ initialFile }: Props) {
               <input type="checkbox" checked={lockAspect} onChange={(e) => setLockAspect(e.target.checked)} className="w-4 h-4" />
               비율 유지
             </label>
+            {/* Aspect ratio presets */}
+            <div className="flex flex-col gap-1.5">
+              <div className="text-[12px] font-mono text-[var(--color-muted)]">비율 프리셋</div>
+              <div className="flex flex-wrap gap-1.5">
+                {ASPECT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => {
+                      if (!img) return;
+                      if (preset.ratio === null) {
+                        setWidth(String(img.width));
+                        setHeight(String(img.height));
+                        setUnit("px");
+                      } else {
+                        const curW = parseFloat(width) || img.width;
+                        const newH = Math.round(curW / preset.ratio);
+                        setHeight(String(newH));
+                        setLockAspect(false);
+                        setUnit("px");
+                      }
+                    }}
+                    className="px-2 py-1 rounded-[4px] text-[11px] font-medium border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-alt)] transition-colors"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             {img && (
               <div className="text-[12px] text-[var(--color-muted)]">
                 원본: {img.width} × {img.height} px

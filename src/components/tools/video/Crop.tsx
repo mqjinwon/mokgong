@@ -1,56 +1,62 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
 import { BetaBanner, SizeWarning, ProgressBar, DropZone } from "./shared";
+import { useDraggableRegion, CropHandles } from "@/hooks/useDraggableRegion";
 
 interface Props {
   initialFile?: File | null;
 }
 
-interface Rect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
 export function CropTool({ initialFile }: Props) {
   const [file, setFile] = useState<File | null>(() => initialFile ?? null);
   const [videoSize, setVideoSize] = useState({ w: 0, h: 0 });
-  const [rect, setRect] = useState<Rect>({ x: 0, y: 0, w: 0, h: 0 });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [error, setError] = useState("");
+  const [cursor, setCursor] = useState("crosshair");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const videoUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+
+  const {
+    rect,
+    setRect,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    getCursor,
+  } = useDraggableRegion({
+    bounds: canvasSize,
+    aspectRatio: null,
+    minSize: 10,
+  });
+
+  useEffect(() => {
+    return () => {
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+    };
+  }, [videoUrl]);
 
   const drawFrame = useCallback(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    if (!canvas || !video) return;
+    if (!canvas || !video || canvasSize.w === 0) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    // Draw crop rect
-    ctx.strokeStyle = "#3B82F6";
-    ctx.lineWidth = 2;
-    const scaleX = canvas.width / videoSize.w;
-    const scaleY = canvas.height / videoSize.h;
-    ctx.strokeRect(rect.x * scaleX, rect.y * scaleY, rect.w * scaleX, rect.h * scaleY);
-    ctx.fillStyle = "rgba(59,130,246,0.1)";
-    ctx.fillRect(rect.x * scaleX, rect.y * scaleY, rect.w * scaleX, rect.h * scaleY);
-  }, [rect, videoSize]);
+  }, [canvasSize]);
 
   useEffect(() => {
     drawFrame();
-  }, [drawFrame]);
+  }, [drawFrame, rect]);
 
   function handleVideoLoaded() {
     const v = videoRef.current;
@@ -65,47 +71,47 @@ export function CropTool({ initialFile }: Props) {
     const vw = v.videoWidth;
     const vh = v.videoHeight;
     setVideoSize({ w: vw, h: vh });
-    setRect({ x: 0, y: 0, w: vw, h: vh });
-    canvas.width = Math.min(vw, 600);
-    canvas.height = Math.round((canvas.width / vw) * vh);
+    const cw = Math.min(vw, 600);
+    const ch = Math.round((cw / vw) * vh);
+    canvas.width = cw;
+    canvas.height = ch;
+    setCanvasSize({ w: cw, h: ch });
+    setRect({ x: 0, y: 0, w: cw, h: ch });
     drawFrame();
   }
 
-  function getCanvasPos(e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } {
+  function onMouseDown(e: React.MouseEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current!;
     const r = canvas.getBoundingClientRect();
-    const scaleX = videoSize.w / canvas.width;
-    const scaleY = videoSize.h / canvas.height;
-    return {
-      x: Math.round((e.clientX - r.left) * scaleX),
-      y: Math.round((e.clientY - r.top) * scaleY),
-    };
-  }
-
-  function onMouseDown(e: React.MouseEvent<HTMLCanvasElement>) {
-    const pos = getCanvasPos(e);
-    setDragStart(pos);
-    setRect({ x: pos.x, y: pos.y, w: 0, h: 0 });
-    setDragging(true);
+    const px = e.clientX - r.left;
+    const py = e.clientY - r.top;
+    handleMouseDown(px, py);
   }
 
   function onMouseMove(e: React.MouseEvent<HTMLCanvasElement>) {
-    if (!dragging) return;
-    const pos = getCanvasPos(e);
-    setRect({
-      x: Math.min(dragStart.x, pos.x),
-      y: Math.min(dragStart.y, pos.y),
-      w: Math.abs(pos.x - dragStart.x),
-      h: Math.abs(pos.y - dragStart.y),
-    });
+    const canvas = canvasRef.current!;
+    const r = canvas.getBoundingClientRect();
+    const px = e.clientX - r.left;
+    const py = e.clientY - r.top;
+    handleMouseMove(px, py);
+    setCursor(getCursor(px, py));
   }
 
-  function onMouseUp() {
-    setDragging(false);
+  function toVideoCoords() {
+    if (canvasSize.w === 0) return { x: 0, y: 0, w: 0, h: 0 };
+    const scaleX = videoSize.w / canvasSize.w;
+    const scaleY = videoSize.h / canvasSize.h;
+    return {
+      x: Math.round(rect.x * scaleX),
+      y: Math.round(rect.y * scaleY),
+      w: Math.round(rect.w * scaleX),
+      h: Math.round(rect.h * scaleY),
+    };
   }
 
   async function handleRun() {
-    if (!file || rect.w < 10 || rect.h < 10) return;
+    const vc = toVideoCoords();
+    if (!file || vc.w < 10 || vc.h < 10) return;
     setBusy(true);
     setProgress(0);
     setError("");
@@ -113,7 +119,7 @@ export function CropTool({ initialFile }: Props) {
     try {
       const { runFFmpeg } = await import("@/lib/ffmpeg");
       const blob = await runFFmpeg(
-        ["-i", "INPUT", "-vf", `crop=${rect.w}:${rect.h}:${rect.x}:${rect.y}`, "-c:a", "copy", "OUTPUT"],
+        ["-i", "INPUT", "-vf", `crop=${vc.w}:${vc.h}:${vc.x}:${vc.y}`, "-c:a", "copy", "OUTPUT"],
         file,
         "output.mp4",
         "video/mp4",
@@ -134,8 +140,11 @@ export function CropTool({ initialFile }: Props) {
     setError("");
     setProgress(0);
     setVideoSize({ w: 0, h: 0 });
+    setCanvasSize({ w: 0, h: 0 });
     setRect({ x: 0, y: 0, w: 0, h: 0 });
   }
+
+  const vc = toVideoCoords();
 
   if (!file) {
     return (
@@ -162,26 +171,46 @@ export function CropTool({ initialFile }: Props) {
             {/* Hidden video for frame extraction */}
             <video
               ref={videoRef}
-              src={URL.createObjectURL(file)}
+              src={videoUrl ?? undefined}
               onLoadedMetadata={handleVideoLoaded}
               onSeeked={handleSeeked}
               className="hidden"
-              crossOrigin="anonymous"
               preload="auto"
             />
-            <canvas
-              ref={canvasRef}
-              className="w-full rounded-[8px] cursor-crosshair border border-[var(--color-border)]"
-              onMouseDown={onMouseDown}
-              onMouseMove={onMouseMove}
-              onMouseUp={onMouseUp}
-              onMouseLeave={onMouseUp}
-            />
+            <div className="relative inline-block">
+              <canvas
+                ref={canvasRef}
+                className="rounded-[8px] border border-[var(--color-border)]"
+                style={{ cursor }}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+              />
+              {canvasSize.w > 0 && (
+                <>
+                  <div
+                    className="absolute border-2 border-[var(--color-accent)] pointer-events-none"
+                    style={{
+                      left: rect.x,
+                      top: rect.y,
+                      width: rect.w,
+                      height: rect.h,
+                      boxShadow: `0 0 0 9999px rgba(0,0,0,0.35)`,
+                    }}
+                  />
+                  <CropHandles rect={rect} />
+                </>
+              )}
+            </div>
             {videoSize.w > 0 && (
               <div className="text-[12px] font-mono text-[var(--color-muted)] mt-2">
-                원본 {videoSize.w}×{videoSize.h} · 크롭 {rect.w}×{rect.h} @ ({rect.x},{rect.y})
+                원본 {videoSize.w}×{videoSize.h} · 크롭 {vc.w}×{vc.h} @ ({vc.x},{vc.y})
               </div>
             )}
+            <div className="text-[11px] text-[var(--color-muted)] opacity-70 mt-1">
+              드래그로 새 영역 그리기 · 영역 안 클릭+드래그로 이동
+            </div>
           </div>
           {busy && <ProgressBar percent={progress} />}
         </div>
@@ -189,27 +218,38 @@ export function CropTool({ initialFile }: Props) {
         {/* Controls */}
         <div className="w-full lg:w-56 flex flex-col gap-4">
           <div className="p-4 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] flex flex-col gap-3">
-            <div className="text-[13px] font-semibold">수동 입력</div>
-            {(["x", "y", "w", "h"] as const).map((k) => (
-              <label key={k} className="flex flex-col gap-1">
-                <span className="text-[12px] text-[var(--color-muted)]">{k.toUpperCase()}</span>
-                <input
-                  type="number"
-                  value={rect[k]}
-                  min={0}
-                  max={k === "x" || k === "w" ? videoSize.w : videoSize.h}
-                  onChange={(e) => setRect((prev) => ({ ...prev, [k]: Number(e.target.value) }))}
-                  className="text-[13px] px-2 py-1.5 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-bg)] w-full"
-                />
-              </label>
-            ))}
+            <div className="text-[13px] font-semibold">크롭 영역 (비디오 좌표)</div>
+            <div className="grid grid-cols-2 gap-2">
+              {(["x", "y", "w", "h"] as const).map((k) => (
+                <label key={k} className="flex flex-col gap-1">
+                  <span className="text-[12px] text-[var(--color-muted)]">{k.toUpperCase()}</span>
+                  <input
+                    type="number"
+                    value={vc[k]}
+                    min={0}
+                    max={k === "x" || k === "w" ? videoSize.w : videoSize.h}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      const scaleX = canvasSize.w / videoSize.w;
+                      const scaleY = canvasSize.h / videoSize.h;
+                      const canvasVal = k === "x" || k === "w" ? val * scaleX : val * scaleY;
+                      setRect({ ...rect, [k]: canvasVal });
+                    }}
+                    className="text-[13px] px-2 py-1.5 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-bg)] w-full"
+                  />
+                </label>
+              ))}
+            </div>
           </div>
 
-          <Button variant="primary" onClick={handleRun} disabled={busy || rect.w < 10} className="w-full">
+          <Button variant="primary" onClick={handleRun} disabled={busy || vc.w < 10} className="w-full">
             {busy ? "처리 중…" : "처리하기"}
           </Button>
-          {resultBlob && (
-            <Button variant="primary" onClick={() => downloadBlob(resultBlob, "cropped.mp4")} className="w-full">
+          {resultBlob && file && (
+            <Button variant="primary" onClick={() => {
+              const baseName = file.name.replace(/\.[^.]+$/, "");
+              downloadBlob(resultBlob, `${baseName}_cropped.mp4`);
+            }} className="w-full">
               <Download size={14} className="mr-1.5" /> 다운로드
             </Button>
           )}

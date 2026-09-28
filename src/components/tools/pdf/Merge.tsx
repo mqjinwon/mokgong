@@ -22,12 +22,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/Button";
 import { FileDrop } from "@/components/ui/FileDrop";
 import { downloadBlob } from "@/lib/download";
-import { loadPdfDoc } from "@/lib/pdfUtils";
+import { loadPdfDoc, renderPdfPageToCanvas } from "@/lib/pdfUtils";
 
 interface PdfEntry {
   id: string;
   file: File;
   pageCount: number;
+  thumbnail?: string;
 }
 
 interface Props {
@@ -66,6 +67,10 @@ function SortableItem({
       >
         <GripVertical size={16} />
       </button>
+      {entry.thumbnail && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={entry.thumbnail} alt="" className="h-12 rounded border border-[var(--color-border)] object-contain bg-white shrink-0" />
+      )}
       <div className="flex-1 min-w-0">
         <div className="text-[14px] font-medium truncate">{entry.file.name}</div>
         <div className="text-[12px] font-mono text-[var(--color-muted)]">
@@ -107,8 +112,10 @@ export function MergeTool({ initialFile }: Props) {
     const newEntries: PdfEntry[] = [];
     for (const file of files) {
       try {
-        const { pageCount } = await loadPdfDoc(file);
-        newEntries.push({ id: `${file.name}-${Date.now()}-${Math.random()}`, file, pageCount });
+        const { data, pageCount } = await loadPdfDoc(file);
+        const canvas = await renderPdfPageToCanvas(data, 0, 0.15);
+        const thumbnail = canvas.toDataURL();
+        newEntries.push({ id: `${file.name}-${Date.now()}-${Math.random()}`, file, pageCount, thumbnail });
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : String(e));
         return;

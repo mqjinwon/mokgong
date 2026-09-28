@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/Button";
 import { FileDrop } from "@/components/ui/FileDrop";
 import { loadImage, canvasToBlob } from "@/lib/imageUtils";
 import { downloadBlob } from "@/lib/download";
+import { useDraggableRegion, CropHandles } from "@/hooks/useDraggableRegion";
 
-type AspectRatio = "free" | "1:1" | "4:3" | "16:9";
+type AspectRatio = "free" | "1:1" | "4:3" | "16:9" | "9:16" | "3:2";
 
 const RATIOS: { label: string; value: AspectRatio }[] = [
   { label: "Free", value: "free" },
   { label: "1:1", value: "1:1" },
   { label: "4:3", value: "4:3" },
   { label: "16:9", value: "16:9" },
+  { label: "9:16", value: "9:16" },
+  { label: "3:2", value: "3:2" },
 ];
 
 interface Props {
@@ -25,11 +28,28 @@ export function CropTool({ initialFile }: Props) {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [ratio, setRatio] = useState<AspectRatio>("free");
   const [error, setError] = useState("");
-  const [rect, setRect] = useState({ x: 0, y: 0, w: 0, h: 0 });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [displayDimensions, setDisplayDimensions] = useState({ dw: 0, dh: 0, scale: 1 });
+  const [cursor, setCursor] = useState("crosshair");
+
+  const aspectRatioNum = ratio === "free" ? null : (() => {
+    const [rw, rh] = ratio.split(":").map(Number);
+    return rw / rh;
+  })();
+
+  const {
+    rect,
+    setRect,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    getCursor,
+  } = useDraggableRegion({
+    bounds: { w: displayDimensions.dw, h: displayDimensions.dh },
+    aspectRatio: aspectRatioNum,
+    minSize: 10,
+  });
 
   const getScale = useCallback(() => {
     if (!img || !containerRef.current) return 1;
@@ -53,8 +73,9 @@ export function CropTool({ initialFile }: Props) {
     const scale = Math.min(1, maxW / img.width, maxH / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
+    setDisplayDimensions({ dw, dh, scale });
     setRect({ x: 0, y: 0, w: dw, h: dh });
-  }, [img]);
+  }, [img, setRect]);
 
   useEffect(() => {
     if (!img || !previewCanvasRef.current) return;
@@ -91,35 +112,22 @@ export function CropTool({ initialFile }: Props) {
   function onMouseDown(e: React.MouseEvent) {
     if (!containerRef.current) return;
     const bounds = containerRef.current.getBoundingClientRect();
-    setDragStart({ x: e.clientX - bounds.left, y: e.clientY - bounds.top });
-    setDragging(true);
+    const px = e.clientX - bounds.left;
+    const py = e.clientY - bounds.top;
+    handleMouseDown(px, py);
   }
 
   function onMouseMove(e: React.MouseEvent) {
-    if (!dragging || !img || !containerRef.current) return;
+    if (!containerRef.current) return;
     const bounds = containerRef.current.getBoundingClientRect();
-    const scale = getScale();
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const cx = e.clientX - bounds.left;
-    const cy = e.clientY - bounds.top;
-    let x = Math.min(dragStart.x, cx);
-    let y = Math.min(dragStart.y, cy);
-    let w = Math.abs(cx - dragStart.x);
-    let h = Math.abs(cy - dragStart.y);
-    if (ratio !== "free") {
-      const [rw, rh] = ratio.split(":").map(Number);
-      h = w / (rw / rh);
-    }
-    x = Math.max(0, Math.min(x, dw - w));
-    y = Math.max(0, Math.min(y, dh - h));
-    w = Math.min(w, dw - x);
-    h = Math.min(h, dh - y);
-    setRect({ x, y, w, h });
+    const px = e.clientX - bounds.left;
+    const py = e.clientY - bounds.top;
+    handleMouseMove(px, py);
+    setCursor(getCursor(px, py));
   }
 
   async function handleCrop() {
-    if (!img) return;
+    if (!img || !file) return;
     const scale = getScale();
     const canvas = document.createElement("canvas");
     const sx = rect.x / scale;
@@ -131,7 +139,8 @@ export function CropTool({ initialFile }: Props) {
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
     const blob = await canvasToBlob(canvas, "image/png");
-    downloadBlob(blob, "cropped.png");
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    downloadBlob(blob, `${baseName}_cropped.png`);
   }
 
   function reset() {
@@ -140,20 +149,6 @@ export function CropTool({ initialFile }: Props) {
     setError("");
     setRatio("free");
   }
-
-  const [displayDimensions, setDisplayDimensions] = useState({ dw: 0, dh: 0, scale: 1 });
-
-  useEffect(() => {
-    if (!img || !containerRef.current) return;
-    const maxW = containerRef.current.clientWidth;
-    const maxH = 400;
-    const scale = Math.min(1, maxW / img.width, maxH / img.height);
-    setDisplayDimensions({
-      dw: img.width * scale,
-      dh: img.height * scale,
-      scale,
-    });
-  }, [img]);
 
   const { dh, scale } = displayDimensions;
 
@@ -175,25 +170,28 @@ export function CropTool({ initialFile }: Props) {
           {/* Preview */}
           <div
             ref={containerRef}
-            className="relative flex-1 bg-[var(--color-surface-alt)] rounded-[12px] overflow-hidden cursor-crosshair select-none"
-            style={{ minHeight: dh || 300 }}
+            className="relative flex-1 bg-[var(--color-surface-alt)] rounded-[12px] overflow-hidden select-none"
+            style={{ minHeight: dh || 300, cursor }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
-            onMouseUp={() => setDragging(false)}
-            onMouseLeave={() => setDragging(false)}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
           >
             <canvas ref={previewCanvasRef} className="block" />
             {img && (
-              <div
-                className="absolute border-2 border-[var(--color-accent)] pointer-events-none"
-                style={{
-                  left: rect.x,
-                  top: rect.y,
-                  width: rect.w,
-                  height: rect.h,
-                  boxShadow: `0 0 0 9999px rgba(0,0,0,0.35)`,
-                }}
-              />
+              <>
+                <div
+                  className="absolute border-2 border-[var(--color-accent)] pointer-events-none"
+                  style={{
+                    left: rect.x,
+                    top: rect.y,
+                    width: rect.w,
+                    height: rect.h,
+                    boxShadow: `0 0 0 9999px rgba(0,0,0,0.35)`,
+                  }}
+                />
+                <CropHandles rect={rect} />
+              </>
             )}
           </div>
 
@@ -201,7 +199,7 @@ export function CropTool({ initialFile }: Props) {
           <div className="w-full lg:w-56 flex flex-col gap-4">
             <div>
               <div className="text-[12px] font-mono text-[var(--color-muted)] mb-2">비율</div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 {RATIOS.map((r) => (
                   <button
                     key={r.value}
@@ -215,6 +213,9 @@ export function CropTool({ initialFile }: Props) {
             </div>
             <div className="text-[12px] text-[var(--color-muted)]">
               영역: {Math.round(rect.w / scale)} × {Math.round(rect.h / scale)} px
+            </div>
+            <div className="text-[11px] text-[var(--color-muted)] opacity-70">
+              드래그로 새 영역 그리기 · 영역 안 클릭+드래그로 이동
             </div>
             <Button variant="primary" onClick={handleCrop} className="w-full">
               <Download size={14} className="mr-1.5" /> 다운로드

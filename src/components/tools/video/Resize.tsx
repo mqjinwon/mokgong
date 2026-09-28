@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
@@ -9,6 +9,14 @@ import { BetaBanner, SizeWarning, ProgressBar, DropZone } from "./shared";
 interface Props {
   initialFile?: File | null;
 }
+
+const RESOLUTION_PRESETS = [
+  { label: "원본", w: 0 },
+  { label: "1080p", w: 1920 },
+  { label: "720p", w: 1280 },
+  { label: "480p", w: 854 },
+  { label: "360p", w: 640 },
+] as const;
 
 export function ResizeTool({ initialFile }: Props) {
   const [file, setFile] = useState<File | null>(() => initialFile ?? null);
@@ -21,14 +29,25 @@ export function ResizeTool({ initialFile }: Props) {
   const [progress, setProgress] = useState(0);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [error, setError] = useState("");
+  const dimensionsSet = useRef(false);
 
-  function handleVideoLoaded(e: React.SyntheticEvent<HTMLVideoElement>) {
+  const videoUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+
+  useEffect(() => {
+    return () => {
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+    };
+  }, [videoUrl]);
+
+  const handleVideoLoaded = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (dimensionsSet.current) return;
     const v = e.currentTarget;
     setOrigW(v.videoWidth);
     setOrigH(v.videoHeight);
     setTargetW(v.videoWidth);
     setTargetH(v.videoHeight);
-  }
+    dimensionsSet.current = true;
+  }, []);
 
   function onWidthChange(val: number) {
     setTargetW(val);
@@ -85,6 +104,7 @@ export function ResizeTool({ initialFile }: Props) {
     setOrigH(0);
     setTargetW(0);
     setTargetH(0);
+    dimensionsSet.current = false;
   }
 
   if (!file) {
@@ -110,7 +130,7 @@ export function ResizeTool({ initialFile }: Props) {
           <div className="p-4 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)]">
             <div className="text-[13px] font-semibold mb-2">미리보기</div>
             <video
-              src={URL.createObjectURL(file)}
+              src={videoUrl ?? undefined}
               controls
               onLoadedMetadata={handleVideoLoaded}
               className="w-full rounded-[8px] max-h-[300px] object-contain bg-black"
@@ -165,13 +185,42 @@ export function ResizeTool({ initialFile }: Props) {
                 <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${lockAspect ? "translate-x-3" : "translate-x-0.5"}`} />
               </div>
             </label>
+
+            {/* Resolution presets */}
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-[var(--color-border)]">
+              <span className="text-[12px] text-[var(--color-muted)]">프리셋</span>
+              <div className="flex flex-wrap gap-1.5">
+                {RESOLUTION_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => {
+                      if (preset.w === 0) {
+                        onWidthChange(origW);
+                      } else {
+                        onWidthChange(preset.w);
+                      }
+                    }}
+                    className={`px-2 py-1 rounded-[4px] text-[11px] font-medium border transition-colors ${
+                      (preset.w === 0 && targetW === origW) || (preset.w !== 0 && targetW === preset.w)
+                        ? "bg-[var(--color-accent)] text-white border-transparent"
+                        : "border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-alt)]"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <Button variant="primary" onClick={handleRun} disabled={busy || targetW === 0} className="w-full">
             {busy ? "처리 중…" : "처리하기"}
           </Button>
-          {resultBlob && (
-            <Button variant="primary" onClick={() => downloadBlob(resultBlob, "resized.mp4")} className="w-full">
+          {resultBlob && file && (
+            <Button variant="primary" onClick={() => {
+              const baseName = file.name.replace(/\.[^.]+$/, "");
+              downloadBlob(resultBlob, `${baseName}_${targetW}x${targetH}.mp4`);
+            }} className="w-full">
               <Download size={14} className="mr-1.5" /> 다운로드
             </Button>
           )}

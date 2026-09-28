@@ -5,7 +5,7 @@ import { FileDrop } from "@/components/ui/FileDrop";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
-import { loadPdfDoc } from "@/lib/pdfUtils";
+import { loadPdfDoc, renderPdfPageToCanvas } from "@/lib/pdfUtils";
 
 interface Props {
   initialFile?: File | null;
@@ -14,6 +14,8 @@ interface Props {
 export function CompressTool({ initialFile }: Props) {
   const [file, setFile] = useState<File | null>(initialFile ?? null);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [pageCount, setPageCount] = useState(0);
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [originalSize, setOriginalSize] = useState(0);
   const [resultSize, setResultSize] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -31,10 +33,20 @@ export function CompressTool({ initialFile }: Props) {
     setError("");
     setResultSize(null);
     try {
-      const { data } = await loadPdfDoc(f);
+      const { data, pageCount: pc } = await loadPdfDoc(f);
       setPdfData(data);
+      setPageCount(pc);
       setOriginalSize(f.size);
       setFile(f);
+      
+      // Load thumbnails (max 8)
+      const thumbs: string[] = [];
+      const count = Math.min(pc, 8);
+      for (let i = 0; i < count; i++) {
+        const canvas = await renderPdfPageToCanvas(data, i, 0.2);
+        thumbs.push(canvas.toDataURL());
+      }
+      setThumbnails(thumbs);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -63,6 +75,8 @@ export function CompressTool({ initialFile }: Props) {
   function reset() {
     setFile(null);
     setPdfData(null);
+    setPageCount(0);
+    setThumbnails([]);
     setOriginalSize(0);
     setResultSize(null);
     setError("");
@@ -94,41 +108,64 @@ export function CompressTool({ initialFile }: Props) {
           sublabel="클릭하거나 파일을 드래그하세요"
         />
       ) : (
-        <div className="flex flex-col lg:flex-row gap-5">
-          {/* Info */}
-          <div className="flex-1 flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
+          {/* Page thumbnails */}
+          {thumbnails.length > 0 && (
             <div className="p-4 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)]">
-              <div className="text-[14px] font-semibold mb-3">{file.name}</div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-[11px] font-mono text-[var(--color-muted)] mb-0.5">원본 크기</div>
-                  <div className="text-[16px] font-semibold">{fmt(originalSize)}</div>
-                </div>
-                {resultSize !== null && (
+              <div className="text-[12px] font-mono text-[var(--color-muted)] mb-2">
+                미리보기 · {pageCount}페이지
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {thumbnails.map((src, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt={`p${i + 1}`} className="h-16 rounded border border-[var(--color-border)] object-contain bg-white" />
+                    <span className="text-[10px] font-mono text-[var(--color-muted)]">{i + 1}</span>
+                  </div>
+                ))}
+                {pageCount > 8 && (
+                  <div className="flex items-center text-[12px] text-[var(--color-muted)]">+{pageCount - 8}…</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col lg:flex-row gap-5">
+            {/* Info */}
+            <div className="flex-1 flex flex-col gap-4">
+              <div className="p-4 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)]">
+                <div className="text-[14px] font-semibold mb-3">{file.name}</div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <div className="text-[11px] font-mono text-[var(--color-muted)] mb-0.5">결과 크기</div>
-                    <div className={`text-[16px] font-semibold ${resultSize < originalSize ? "text-green-600" : "text-[var(--color-muted)]"}`}>
-                      {fmt(resultSize)}
+                    <div className="text-[11px] font-mono text-[var(--color-muted)] mb-0.5">원본 크기</div>
+                    <div className="text-[16px] font-semibold">{fmt(originalSize)}</div>
+                  </div>
+                  {resultSize !== null && (
+                    <div>
+                      <div className="text-[11px] font-mono text-[var(--color-muted)] mb-0.5">결과 크기</div>
+                      <div className={`text-[16px] font-semibold ${resultSize < originalSize ? "text-green-600" : "text-[var(--color-muted)]"}`}>
+                        {fmt(resultSize)}
+                      </div>
                     </div>
+                  )}
+                </div>
+                {ratio !== null && (
+                  <div className={`mt-3 text-[13px] font-mono ${ratio > 0 ? "text-green-600" : "text-[var(--color-muted)]"}`}>
+                    {ratio > 0 ? `${ratio}% 감소` : ratio === 0 ? "크기 동일" : `${Math.abs(ratio)}% 증가 (이미 최적화됨)`}
                   </div>
                 )}
               </div>
-              {ratio !== null && (
-                <div className={`mt-3 text-[13px] font-mono ${ratio > 0 ? "text-green-600" : "text-[var(--color-muted)]"}`}>
-                  {ratio > 0 ? `${ratio}% 감소` : ratio === 0 ? "크기 동일" : `${Math.abs(ratio)}% 증가 (이미 최적화됨)`}
-                </div>
-              )}
             </div>
-          </div>
 
-          {/* Controls */}
-          <div className="w-full lg:w-56 flex flex-col gap-4">
-            <Button variant="primary" onClick={handleCompress} disabled={busy} className="w-full">
-              <Download size={14} className="mr-1.5" /> {busy ? "압축 중…" : "압축 후 다운로드"}
-            </Button>
-            <Button variant="ghost" onClick={reset} className="w-full">
-              <RotateCcw size={14} className="mr-1.5" /> 초기화
-            </Button>
+            {/* Controls */}
+            <div className="w-full lg:w-56 flex flex-col gap-4">
+              <Button variant="primary" onClick={handleCompress} disabled={busy} className="w-full">
+                <Download size={14} className="mr-1.5" /> {busy ? "압축 중…" : "압축 후 다운로드"}
+              </Button>
+              <Button variant="ghost" onClick={reset} className="w-full">
+                <RotateCcw size={14} className="mr-1.5" /> 초기화
+              </Button>
+            </div>
           </div>
         </div>
       )}

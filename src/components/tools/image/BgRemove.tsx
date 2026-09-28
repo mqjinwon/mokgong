@@ -68,8 +68,9 @@ export function BgRemoveTool({ initialFile }: Props) {
   }, [img, tolerance, resultUrl]);
 
   function handleDownload() {
-    if (!resultBlob) return;
-    downloadBlob(resultBlob, "bg-removed.png");
+    if (!resultBlob || !file) return;
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    downloadBlob(resultBlob, `${baseName}_nobg.png`);
   }
 
   function reset() {
