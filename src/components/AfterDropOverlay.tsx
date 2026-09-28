@@ -45,6 +45,9 @@ export function AfterDropOverlay({ file, onClose }: AfterDropOverlayProps) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drop-overlay-title"
       className="fixed inset-0 bg-[rgba(20,22,31,0.45)] z-30 flex items-start justify-center p-[60px_24px] animate-[uwu-fade_.18s_ease]"
       onClick={onClose}
     >
@@ -57,7 +60,8 @@ export function AfterDropOverlay({ file, onClose }: AfterDropOverlayProps) {
           <Chip tone="accent">FILE DETECTED</Chip>
           <button
             onClick={onClose}
-            className="text-[var(--color-muted)] text-[22px] cursor-pointer bg-none border-none p-0 leading-none"
+            aria-label="닫기"
+            className="text-[var(--color-muted)] text-[22px] cursor-pointer bg-none border-none p-0 leading-none hover:text-[var(--color-fg)] transition-colors"
           >
             ×
           </button>
@@ -81,7 +85,7 @@ export function AfterDropOverlay({ file, onClose }: AfterDropOverlayProps) {
 
         {/* Actions header */}
         <div className="mt-5 flex justify-between items-baseline">
-          <h3 className="m-0 font-semibold text-[18px] text-[var(--color-fg)]">
+          <h3 id="drop-overlay-title" className="m-0 font-semibold text-[18px] text-[var(--color-fg)]">
             {file.name} — {kindLabel[kind] ?? "알 수 없는"} 파일
           </h3>
           <span className="text-[var(--color-muted)] text-[12px] font-mono">
