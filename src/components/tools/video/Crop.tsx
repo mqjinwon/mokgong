@@ -18,7 +18,7 @@ interface Rect {
 }
 
 export function CropTool({ initialFile }: Props) {
-  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [file, setFile] = useState<File | null>(() => initialFile ?? null);
   const [videoSize, setVideoSize] = useState({ w: 0, h: 0 });
   const [rect, setRect] = useState<Rect>({ x: 0, y: 0, w: 0, h: 0 });
   const [dragging, setDragging] = useState(false);
@@ -29,14 +29,6 @@ export function CropTool({ initialFile }: Props) {
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    if (initialFile) setFile(initialFile);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const drawFrame = useCallback(() => {
     const canvas = canvasRef.current;

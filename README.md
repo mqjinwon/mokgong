@@ -52,6 +52,10 @@ npm run dev
 npm run build
 ```
 
+## CI
+
+GitHub Actions 워크플로우가 `main` 브랜치 및 PR에서 `lint`와 `build`를 자동 실행합니다.
+
 ## 배포
 
 Vercel로 배포합니다.

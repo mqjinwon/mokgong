@@ -60,10 +60,12 @@ export function CropPagesTool({ initialFile }: Props) {
   }, [naturalW, naturalH]);
 
   useEffect(() => {
-    if (!naturalW || !naturalH) return;
-    const scale = getScale();
+    if (!naturalW || !naturalH || !containerRef.current) return;
+    const maxW = containerRef.current.clientWidth;
+    const maxH = 460;
+    const scale = Math.min(1, maxW / naturalW, maxH / naturalH);
     setRect({ x: 0, y: 0, w: naturalW * scale, h: naturalH * scale });
-  }, [naturalW, naturalH, getScale]);
+  }, [naturalW, naturalH]);
 
   function onMouseDown(e: React.MouseEvent) {
     if (!containerRef.current) return;
@@ -171,6 +173,7 @@ export function CropPagesTool({ initialFile }: Props) {
             onMouseLeave={() => setDragging(false)}
           >
             {previewUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={previewUrl} alt="preview" style={{ width: dw, height: dh }} className="block" />
             )}
             {dw > 0 && (

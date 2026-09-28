@@ -62,6 +62,7 @@ export function ConvertTool({ initialFile }: Props) {
       ) : (
         <div className="flex flex-col lg:flex-row gap-5">
           <div className="flex-1 bg-[var(--color-surface-alt)] rounded-[12px] flex items-center justify-center p-4 min-h-[200px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             {img && <img src={img.src} alt="preview" className="max-w-full max-h-[360px] rounded object-contain" />}
           </div>
           <div className="w-full lg:w-64 flex flex-col gap-4">

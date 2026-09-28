@@ -16,8 +16,10 @@ export function Dropzone({ onFile }: DropzoneProps) {
     setDragging(true);
   }
 
-  function handleDragLeave() {
-    setDragging(false);
+  function handleDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragging(false);
+    }
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -30,6 +32,14 @@ export function Dropzone({ onFile }: DropzoneProps) {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) onFile(file);
+    e.target.value = "";
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      inputRef.current?.click();
+    }
   }
 
   return (
@@ -49,14 +59,19 @@ export function Dropzone({ onFile }: DropzoneProps) {
 
       {/* Drop area */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="파일을 떨어뜨리면 작업을 시작합니다"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onKeyDown={handleKeyDown}
         className={`
           mt-8 mx-auto max-w-[720px] rounded-[24px] p-7 px-8
           flex items-center justify-between gap-4
           transition-all duration-150 cursor-pointer
-          border-2 border-dashed
+          border-2 border-dashed outline-none
+          focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]
           ${dragging
             ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
             : "border-[var(--color-border-strong)] bg-white hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-soft)]"

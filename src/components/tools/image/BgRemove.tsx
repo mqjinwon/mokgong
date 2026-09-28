@@ -94,6 +94,7 @@ export function BgRemoveTool({ initialFile }: Props) {
         <div className="flex flex-col lg:flex-row gap-5">
           <div className="flex-1 bg-[repeating-conic-gradient(#ccc_0%_25%,white_0%_50%)] bg-[length:20px_20px] rounded-[12px] flex items-center justify-center p-4 min-h-[200px]">
             {(resultUrl ?? (img?.src)) && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={resultUrl ?? img!.src} alt="preview" className="max-w-full max-h-[360px] rounded object-contain" />
             )}
           </div>

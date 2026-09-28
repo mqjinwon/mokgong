@@ -68,10 +68,13 @@ export function DropZone({
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ref.current?.click(); }
   }
 
+  const displayLabel = label ?? "파일을 선택하세요";
+
   return (
     <div
       role="button"
       tabIndex={0}
+      aria-label={displayLabel}
       className={[
         "flex flex-col items-center justify-center border-2 border-dashed rounded-[16px] p-12 cursor-pointer transition-all text-[var(--color-muted)] text-[14px] gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]",
         dragging
@@ -84,13 +87,14 @@ export function DropZone({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {label ?? "파일을 선택하세요"}
+      {displayLabel}
       <span className="text-[12px] opacity-70">클릭하거나 파일을 드래그하세요</span>
       <input
         ref={ref}
         type="file"
         accept={accept}
         className="hidden"
+        aria-hidden="true"
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) onFile(f);

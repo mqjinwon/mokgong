@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function TrimTool({ initialFile }: Props) {
-  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [file, setFile] = useState<File | null>(() => initialFile ?? null);
   const [videoDuration, setVideoDuration] = useState(0);
   const [startSec, setStartSec] = useState(0);
   const [endSec, setEndSec] = useState(0);
@@ -20,14 +20,6 @@ export function TrimTool({ initialFile }: Props) {
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [error, setError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    if (initialFile) setFile(initialFile);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   function handleVideoLoaded() {
     const v = videoRef.current;

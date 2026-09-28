@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/Button";
@@ -20,19 +20,43 @@ function fmt(bytes: number): string {
 }
 
 export function CompressTool({ initialFile }: Props) {
-  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [file, setFile] = useState<File | null>(() => initialFile ?? null);
   const [quality, setQuality] = useState(0.8);
   const [maxDim, setMaxDim] = useState(3840);
   const [outputType, setOutputType] = useState<OutputType>("image/jpeg");
   const [result, setResult] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
-  const previewUrl = useRef<string>("");
+  const [previewUrl, setPreviewUrl] = useState<string>(() => {
+    if (initialFile) return URL.createObjectURL(initialFile);
+    return "";
+  });
+  const prevFileRef = useRef<File | null>(initialFile ?? null);
+  const prevUrlRef = useRef<string>(previewUrl);
 
-  useEffect(() => {
-    if (!file) return;
-    setResult(null);
-  }, [file]);
+  const updatePreview = useCallback((newFile: File | null) => {
+    if (prevUrlRef.current) {
+      URL.revokeObjectURL(prevUrlRef.current);
+    }
+    if (newFile) {
+      const url = URL.createObjectURL(newFile);
+      prevUrlRef.current = url;
+      setPreviewUrl(url);
+    } else {
+      prevUrlRef.current = "";
+      setPreviewUrl("");
+    }
+  }, []);
+
+  function handleFileSelect(files: File[]) {
+    const newFile = files[0];
+    if (prevFileRef.current !== newFile) {
+      setResult(null);
+    }
+    prevFileRef.current = newFile;
+    setFile(newFile);
+    updatePreview(newFile);
+  }
 
   async function handleCompress() {
     if (!file) return;
@@ -47,6 +71,7 @@ export function CompressTool({ initialFile }: Props) {
         fileType: outputType,
       });
       setResult(compressed);
+      updatePreview(compressed);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -64,11 +89,9 @@ export function CompressTool({ initialFile }: Props) {
     setFile(null);
     setResult(null);
     setError("");
+    updatePreview(null);
+    prevFileRef.current = null;
   }
-
-  const previewFile = result ?? file;
-  if (previewFile && previewUrl.current) URL.revokeObjectURL(previewUrl.current);
-  if (previewFile) previewUrl.current = URL.createObjectURL(previewFile);
 
   return (
     <div className="flex flex-col gap-5">
@@ -77,14 +100,17 @@ export function CompressTool({ initialFile }: Props) {
       {!file ? (
         <FileDrop
           accept={["image/*"]}
-          onFiles={(files) => setFile(files[0])}
+          onFiles={handleFileSelect}
           label="이미지를 선택하세요"
           sublabel="클릭하거나 파일을 드래그하세요"
         />
       ) : (
         <div className="flex flex-col lg:flex-row gap-5">
           <div className="flex-1 bg-[var(--color-surface-alt)] rounded-[12px] flex items-center justify-center p-4 min-h-[200px]">
-            {previewFile && <img src={URL.createObjectURL(previewFile)} alt="preview" className="max-w-full max-h-[360px] rounded object-contain" />}
+            {previewUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt="preview" className="max-w-full max-h-[360px] rounded object-contain" />
+            )}
           </div>
           <div className="w-full lg:w-64 flex flex-col gap-4">
             {file && (

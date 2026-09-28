@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"rtk npm run build 2>&1\",\"timeout\":120000}",
-  "error": "Exit code 1\n> next build\n▲ Next.js 16.2.6 (Turbopack)\n  Creating an optimized production build ...\n✓ Compiled successfully in 1778ms\n  Running TypeScript ...\n⚠ Warning: Next.js inferred your workspace root, but it may not be correct.\n We detected multiple lockfiles and selected the directory of /home/jin/package-lock.json as the root directory.\n To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.\n   See https://nextj...",
-  "timestamp": "2026-05-13T06:38:38.516Z",
-  "retry_count": 4
-}

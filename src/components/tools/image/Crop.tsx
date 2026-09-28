@@ -47,12 +47,14 @@ export function CropTool({ initialFile }: Props) {
   }, [file]);
 
   useEffect(() => {
-    if (!img) return;
-    const scale = getScale();
+    if (!img || !containerRef.current) return;
+    const maxW = containerRef.current.clientWidth;
+    const maxH = 400;
+    const scale = Math.min(1, maxW / img.width, maxH / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
     setRect({ x: 0, y: 0, w: dw, h: dh });
-  }, [img, getScale]);
+  }, [img]);
 
   useEffect(() => {
     if (!img || !previewCanvasRef.current) return;
@@ -139,9 +141,21 @@ export function CropTool({ initialFile }: Props) {
     setRatio("free");
   }
 
-  const scale = img ? getScale() : 1;
-  const dw = img ? img.width * scale : 0;
-  const dh = img ? img.height * scale : 0;
+  const [displayDimensions, setDisplayDimensions] = useState({ dw: 0, dh: 0, scale: 1 });
+
+  useEffect(() => {
+    if (!img || !containerRef.current) return;
+    const maxW = containerRef.current.clientWidth;
+    const maxH = 400;
+    const scale = Math.min(1, maxW / img.width, maxH / img.height);
+    setDisplayDimensions({
+      dw: img.width * scale,
+      dh: img.height * scale,
+      scale,
+    });
+  }, [img]);
+
+  const { dh, scale } = displayDimensions;
 
   return (
     <div className="flex flex-col gap-5">

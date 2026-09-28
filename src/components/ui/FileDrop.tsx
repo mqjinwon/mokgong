@@ -45,10 +45,13 @@ export function FileDrop({ accept, multiple = false, onFiles, label, sublabel }:
     }
   }
 
+  const displayLabel = label ?? "파일을 선택하세요";
+
   return (
     <div
       role="button"
       tabIndex={0}
+      aria-label={displayLabel}
       onClick={() => inputRef.current?.click()}
       onKeyDown={handleKeyDown}
       onDragOver={handleDragOver}
@@ -61,7 +64,7 @@ export function FileDrop({ accept, multiple = false, onFiles, label, sublabel }:
           : "border-[var(--color-border-strong)] hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-soft)]",
       ].join(" ")}
     >
-      <span>{label ?? "파일을 선택하세요"}</span>
+      <span>{displayLabel}</span>
       {sublabel && <span className="text-[12px] opacity-70">{sublabel}</span>}
       <input
         ref={inputRef}
@@ -70,6 +73,7 @@ export function FileDrop({ accept, multiple = false, onFiles, label, sublabel }:
         multiple={multiple}
         className="hidden"
         onChange={handleChange}
+        aria-hidden="true"
       />
     </div>
   );
