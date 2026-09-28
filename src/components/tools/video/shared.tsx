@@ -29,6 +29,77 @@ export function SizeWarning({ file }: { file: File | null }) {
   );
 }
 
+interface RemuxBetaBannerProps {
+  isRemuxCapable: boolean;
+  toolType: "mute" | "trim";
+}
+
+export function RemuxBetaBanner({ isRemuxCapable, toolType }: RemuxBetaBannerProps) {
+  const toolName = toolType === "mute" ? "음소거" : "자르기";
+  
+  if (isRemuxCapable) {
+    return (
+      <div className="p-3 rounded-[8px] bg-green-50 border border-green-200 text-green-800 text-[13px] leading-[1.5]">
+        <div className="flex items-start gap-2">
+          <span className="font-bold shrink-0">BETA</span>
+          <div className="space-y-1">
+            <p>모든 처리는 브라우저 안에서 진행됩니다 — 서버에 업로드되지 않아요.</p>
+            <ul className="text-[12px] opacity-80 list-disc list-inside space-y-0.5">
+              <li>MP4 파일: 스트리밍 방식으로 대용량도 지원</li>
+              <li>{toolName}: 비디오 재인코딩 없이 빠르게 처리</li>
+              <li>브라우저 탭을 닫지 마세요</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 rounded-[8px] bg-amber-50 border border-amber-200 text-amber-800 text-[13px] leading-[1.5]">
+      <div className="flex items-start gap-2">
+        <span className="font-bold shrink-0">BETA</span>
+        <div className="space-y-1">
+          <p>모든 처리는 브라우저 안에서 진행됩니다 — 서버에 업로드되지 않아요.</p>
+          <ul className="text-[12px] opacity-80 list-disc list-inside space-y-0.5">
+            <li>권장: 100MB 이하, 5분 이하 영상</li>
+            <li>MP4 파일은 대용량도 스트리밍 처리 가능</li>
+            <li>첫 사용 시 FFmpeg 로딩에 10~30초 소요</li>
+            <li>브라우저 탭을 닫지 마세요</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface RemuxSizeWarningProps {
+  file: File | null;
+  isRemuxCapable: boolean;
+}
+
+export function RemuxSizeWarning({ file, isRemuxCapable }: RemuxSizeWarningProps) {
+  if (!file) return null;
+  
+  const sizeMB = file.size / 1024 / 1024;
+  
+  if (isRemuxCapable) {
+    if (sizeMB <= 500) return null;
+    return (
+      <div className="p-3 rounded-[8px] bg-amber-50 border border-amber-200 text-amber-700 text-[13px]">
+        파일 크기({sizeMB.toFixed(0)}MB)가 큽니다. 스트리밍 처리가 가능하지만 브라우저 환경에 따라 시간이 걸릴 수 있습니다.
+      </div>
+    );
+  }
+  
+  if (sizeMB <= 200) return null;
+  return (
+    <div className="p-3 rounded-[8px] bg-red-50 border border-red-200 text-red-700 text-[13px]">
+      파일 크기({sizeMB.toFixed(0)}MB)가 200MB를 초과합니다. 브라우저 메모리 한계로 처리가 실패할 수 있습니다. MP4 파일을 사용하면 스트리밍 처리로 대용량도 지원됩니다.
+    </div>
+  );
+}
+
 export function ProgressBar({ percent }: { percent: number }) {
   return (
     <div className="flex flex-col gap-1">
