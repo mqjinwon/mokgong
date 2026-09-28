@@ -62,7 +62,7 @@ export function ResizeTool({ initialFile }: Props) {
   }
 
   async function handleResize() {
-    if (!img) return;
+    if (!img || !file) return;
     let tw = parseFloat(width);
     let th = parseFloat(height);
     if (unit === "%") { tw = img.width * tw / 100; th = img.height * th / 100; }
@@ -73,7 +73,8 @@ export function ResizeTool({ initialFile }: Props) {
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await canvasToBlob(canvas, "image/png");
-    downloadBlob(blob, "resized.png");
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    downloadBlob(blob, `${baseName}_${Math.round(tw)}x${Math.round(th)}.png`);
   }
 
   function reset() {

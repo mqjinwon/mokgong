@@ -6,7 +6,7 @@
 
 Mokgong은 설치·가입 없이 브라우저 안에서 파일을 처리하는 유틸리티 모음입니다.
 파일이 서버로 전송되지 않아 프라이버시가 보호됩니다.
-현재 Image / PDF / Video 카테고리를 지원하며, Document, Developer, Korea utils, AI 카테고리가 순차적으로 추가될 예정입니다.
+현재 **Image / PDF / Video** 카테고리를 지원합니다.
 
 ## 지원 도구
 

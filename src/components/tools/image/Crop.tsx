@@ -30,6 +30,7 @@ export function CropTool({ initialFile }: Props) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [displayDimensions, setDisplayDimensions] = useState({ dw: 0, dh: 0, scale: 1 });
 
   const getScale = useCallback(() => {
     if (!img || !containerRef.current) return 1;
@@ -53,6 +54,7 @@ export function CropTool({ initialFile }: Props) {
     const scale = Math.min(1, maxW / img.width, maxH / img.height);
     const dw = img.width * scale;
     const dh = img.height * scale;
+    setDisplayDimensions({ dw, dh, scale });
     setRect({ x: 0, y: 0, w: dw, h: dh });
   }, [img]);
 
@@ -119,7 +121,7 @@ export function CropTool({ initialFile }: Props) {
   }
 
   async function handleCrop() {
-    if (!img) return;
+    if (!img || !file) return;
     const scale = getScale();
     const canvas = document.createElement("canvas");
     const sx = rect.x / scale;
@@ -131,7 +133,8 @@ export function CropTool({ initialFile }: Props) {
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
     const blob = await canvasToBlob(canvas, "image/png");
-    downloadBlob(blob, "cropped.png");
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    downloadBlob(blob, `${baseName}_cropped.png`);
   }
 
   function reset() {
@@ -140,20 +143,6 @@ export function CropTool({ initialFile }: Props) {
     setError("");
     setRatio("free");
   }
-
-  const [displayDimensions, setDisplayDimensions] = useState({ dw: 0, dh: 0, scale: 1 });
-
-  useEffect(() => {
-    if (!img || !containerRef.current) return;
-    const maxW = containerRef.current.clientWidth;
-    const maxH = 400;
-    const scale = Math.min(1, maxW / img.width, maxH / img.height);
-    setDisplayDimensions({
-      dw: img.width * scale,
-      dh: img.height * scale,
-      scale,
-    });
-  }, [img]);
 
   const { dh, scale } = displayDimensions;
 

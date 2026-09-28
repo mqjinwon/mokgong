@@ -12,6 +12,14 @@ interface Props {
 }
 
 type OutputType = "image/jpeg" | "image/png" | "image/webp";
+type QualityPreset = "high" | "medium" | "low" | "custom";
+
+const QUALITY_PRESETS: { key: QualityPreset; label: string; value: number; desc: string }[] = [
+  { key: "high", label: "높음", value: 0.85, desc: "거의 원본 품질" },
+  { key: "medium", label: "중간", value: 0.70, desc: "균형 잡힌 압축" },
+  { key: "low", label: "낮음", value: 0.50, desc: "최대 용량 절감" },
+  { key: "custom", label: "직접 설정", value: 0, desc: "" },
+];
 
 function fmt(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -19,9 +27,14 @@ function fmt(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
+function getBaseName(file: File): string {
+  return file.name.replace(/\.[^.]+$/, "");
+}
+
 export function CompressTool({ initialFile }: Props) {
   const [file, setFile] = useState<File | null>(() => initialFile ?? null);
-  const [quality, setQuality] = useState(0.8);
+  const [preset, setPreset] = useState<QualityPreset>("medium");
+  const [customQuality, setCustomQuality] = useState(0.7);
   const [maxDim, setMaxDim] = useState(3840);
   const [outputType, setOutputType] = useState<OutputType>("image/jpeg");
   const [result, setResult] = useState<File | null>(null);
@@ -33,6 +46,8 @@ export function CompressTool({ initialFile }: Props) {
   });
   const prevFileRef = useRef<File | null>(initialFile ?? null);
   const prevUrlRef = useRef<string>(previewUrl);
+
+  const quality = preset === "custom" ? customQuality : (QUALITY_PRESETS.find(p => p.key === preset)?.value ?? 0.7);
 
   const updatePreview = useCallback((newFile: File | null) => {
     if (prevUrlRef.current) {
@@ -80,9 +95,10 @@ export function CompressTool({ initialFile }: Props) {
   }
 
   function handleDownload() {
-    if (!result) return;
+    if (!result || !file) return;
     const ext = outputType.split("/")[1];
-    downloadBlob(result, `compressed.${ext}`);
+    const baseName = getBaseName(file);
+    downloadBlob(result, `${baseName}_compressed.${ext}`);
   }
 
   function reset() {
@@ -112,7 +128,7 @@ export function CompressTool({ initialFile }: Props) {
               <img src={previewUrl} alt="preview" className="max-w-full max-h-[360px] rounded object-contain" />
             )}
           </div>
-          <div className="w-full lg:w-64 flex flex-col gap-4">
+          <div className="w-full lg:w-72 flex flex-col gap-4">
             {file && (
               <div className="p-3 rounded-[8px] bg-[var(--color-surface-alt)] text-[13px] space-y-1">
                 <div className="flex justify-between"><span className="text-[var(--color-muted)]">원본</span><span className="font-mono">{fmt(file.size)}</span></div>
@@ -121,8 +137,29 @@ export function CompressTool({ initialFile }: Props) {
               </div>
             )}
             <div>
-              <label className="text-[12px] font-mono text-[var(--color-muted)] block mb-1">품질 {Math.round(quality * 100)}%</label>
-              <input type="range" min={40} max={95} value={Math.round(quality * 100)} onChange={(e) => setQuality(Number(e.target.value) / 100)} className="w-full" />
+              <label className="text-[12px] font-mono text-[var(--color-muted)] block mb-2">품질 프리셋</label>
+              <div className="flex flex-wrap gap-2">
+                {QUALITY_PRESETS.map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => setPreset(p.key)}
+                    className={`w-[calc(50%-4px)] px-2 py-2 rounded-[6px] text-[12px] font-medium border transition-all text-left ${
+                      preset === p.key
+                        ? "bg-[var(--color-accent)] text-white border-transparent"
+                        : "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-fg)] hover:border-[var(--color-accent)]"
+                    }`}
+                  >
+                    <div>{p.label}</div>
+                    {p.desc && <div className="text-[10px] opacity-70 mt-0.5">{p.desc}</div>}
+                  </button>
+                ))}
+              </div>
+              {preset === "custom" && (
+                <div className="mt-2">
+                  <label className="text-[11px] font-mono text-[var(--color-muted)] block mb-1">품질 {Math.round(customQuality * 100)}%</label>
+                  <input type="range" min={30} max={95} value={Math.round(customQuality * 100)} onChange={(e) => setCustomQuality(Number(e.target.value) / 100)} className="w-full" />
+                </div>
+              )}
             </div>
             <div>
               <label className="text-[12px] font-mono text-[var(--color-muted)] block mb-1">최대 크기</label>

@@ -45,18 +45,21 @@ export default function HubPage() {
           ))}
         </div>
 
-        {/* Roadmap strip */}
+        {/* Request tools strip */}
         <div className="mt-9 p-5 px-6 bg-[var(--color-surface-alt)] rounded-[16px] flex justify-between items-center gap-6 flex-wrap">
           <div>
-            <div className="font-semibold text-[16px] text-[var(--color-fg)]">로드맵</div>
+            <div className="font-semibold text-[16px] text-[var(--color-fg)]">원하는 도구가 없나요?</div>
             <div className="text-[var(--color-muted)] text-[13px] mt-1 leading-[1.6]">
-              한글 문서 · 기차 예매 헬퍼 · AI 유틸 · 배치 처리 · 로컬 에이전트 (대형 파일용)
+              필요한 도구를 제안해 주세요. 사용자 요청을 우선 반영합니다.
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">전체 도구 보기</Button>
+          <a
+            href="https://github.com/mqjinwon/mokgong/issues/new?labels=tool-request&title=%5B%EB%8F%84%EA%B5%AC+%EC%9A%94%EC%B2%AD%5D+&body=%EC%96%B4%EB%96%A4+%EB%8F%84%EA%B5%AC%EA%B0%80+%ED%95%84%EC%9A%94%ED%95%9C%EA%B0%80%EC%9A%94%3F"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Button variant="primary" size="sm">도구 제안</Button>
-          </div>
+          </a>
         </div>
       </section>
 

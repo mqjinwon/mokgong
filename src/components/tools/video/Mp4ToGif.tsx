@@ -161,8 +161,11 @@ export function Mp4ToGifTool({ initialFile }: Props) {
           <Button variant="primary" onClick={handleRun} disabled={busy} className="w-full">
             {busy ? "처리 중…" : "처리하기"}
           </Button>
-          {resultBlob && (
-            <Button variant="primary" onClick={() => downloadBlob(resultBlob, "output.gif")} className="w-full">
+          {resultBlob && file && (
+            <Button variant="primary" onClick={() => {
+              const baseName = file.name.replace(/\.[^.]+$/, "");
+              downloadBlob(resultBlob, `${baseName}.gif`);
+            }} className="w-full">
               <Download size={14} className="mr-1.5" /> 다운로드
             </Button>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { downloadBlob } from "@/lib/download";
@@ -208,8 +208,11 @@ export function CropTool({ initialFile }: Props) {
           <Button variant="primary" onClick={handleRun} disabled={busy || rect.w < 10} className="w-full">
             {busy ? "처리 중…" : "처리하기"}
           </Button>
-          {resultBlob && (
-            <Button variant="primary" onClick={() => downloadBlob(resultBlob, "cropped.mp4")} className="w-full">
+          {resultBlob && file && (
+            <Button variant="primary" onClick={() => {
+              const baseName = file.name.replace(/\.[^.]+$/, "");
+              downloadBlob(resultBlob, `${baseName}_cropped.mp4`);
+            }} className="w-full">
               <Download size={14} className="mr-1.5" /> 다운로드
             </Button>
           )}

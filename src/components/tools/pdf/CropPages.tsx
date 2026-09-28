@@ -53,7 +53,7 @@ export function CropPagesTool({ initialFile }: Props) {
   }
 
   const getScale = useCallback(() => {
-    if (!containerRef.current || !naturalW || !naturalH) return 1;
+    if (!naturalW || !naturalH || !containerRef.current) return 1;
     const maxW = containerRef.current.clientWidth;
     const maxH = 460;
     return Math.min(1, maxW / naturalW, maxH / naturalH);

@@ -36,7 +36,7 @@ export function DownsampleTool({ initialFile }: Props) {
   }
 
   async function handleDownload() {
-    if (!img) return;
+    if (!img || !file) return;
     const [tw, th] = getTargetDims();
     const canvas = document.createElement("canvas");
     canvas.width = tw;
@@ -44,7 +44,8 @@ export function DownsampleTool({ initialFile }: Props) {
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0, tw, th);
     const blob = await canvasToBlob(canvas, "image/png");
-    downloadBlob(blob, `downsampled_${tw}x${th}.png`);
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    downloadBlob(blob, `${baseName}_${tw}x${th}.png`);
   }
 
   function reset() { setFile(null); setImg(null); setError(""); }

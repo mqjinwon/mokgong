@@ -61,7 +61,7 @@ export function WatermarkTool({ initialFile }: Props) {
   useEffect(() => { drawPreview(); }, [drawPreview]);
 
   async function handleDownload() {
-    if (!img) return;
+    if (!img || !file) return;
     const canvas = document.createElement("canvas");
     canvas.width = img.width;
     canvas.height = img.height;
@@ -75,7 +75,8 @@ export function WatermarkTool({ initialFile }: Props) {
     ctx.fillText(text, x, y);
     ctx.globalAlpha = 1;
     const blob = await canvasToBlob(canvas, "image/png");
-    downloadBlob(blob, "watermarked.png");
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    downloadBlob(blob, `${baseName}_watermarked.png`);
   }
 
   function reset() { setFile(null); setImg(null); setError(""); }
