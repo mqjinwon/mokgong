@@ -15,11 +15,11 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "browser-image-compression": "^2.0.2",
+    "jszip": "^3.10.2",
     "lucide-react": "^1.14.0",
     "mediabunny": "^1.60.0",
     "next": "16.2.6",
     "pdf-lib": "^1.17.1",
-    "jszip": "^3.10.1",
     "pdfjs-dist": "^5.7.284",
     "react": "19.2.4",
     "react-dom": "19.2.4"
