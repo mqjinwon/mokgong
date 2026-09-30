@@ -12,6 +12,7 @@ import { ConvertTool } from "@/components/tools/image/Convert";
 import { WatermarkTool } from "@/components/tools/image/Watermark";
 import { DownsampleTool } from "@/components/tools/image/Downsample";
 import { BgRemoveTool } from "@/components/tools/image/BgRemove";
+import { ImageToPdfTool } from "@/components/tools/image/ImageToPdf";
 
 const imageCat = CATEGORIES.find((c) => c.key === "image")!;
 
@@ -56,6 +57,7 @@ export default function ImageToolPage() {
       case "image-watermark": return <WatermarkTool initialFile={initialFile} />;
       case "image-downsample": return <DownsampleTool initialFile={initialFile} />;
       case "image-bgremove": return <BgRemoveTool initialFile={initialFile} />;
+      case "image-to-pdf": return <ImageToPdfTool initialFile={initialFile} />;
       default: return <div className="text-[var(--color-muted)]">준비 중입니다.</div>;
     }
   }

@@ -11,6 +11,7 @@ import { DeletePagesTool } from "@/components/tools/pdf/DeletePages";
 import { CropPagesTool } from "@/components/tools/pdf/CropPages";
 import { RotateTool } from "@/components/tools/pdf/Rotate";
 import { CompressTool } from "@/components/tools/pdf/Compress";
+import { PdfToImageTool } from "@/components/tools/pdf/PdfToImage";
 
 const pdfCat = CATEGORIES.find((c) => c.key === "pdf")!;
 
@@ -54,6 +55,7 @@ export default function PdfToolPage() {
       case "pdf-crop": return <CropPagesTool initialFile={initialFile} />;
       case "pdf-rotate": return <RotateTool initialFile={initialFile} />;
       case "pdf-compress": return <CompressTool initialFile={initialFile} />;
+      case "pdf-to-image": return <PdfToImageTool initialFile={initialFile} />;
       default: return <div className="text-[var(--color-muted)]">준비 중입니다.</div>;
     }
   }
