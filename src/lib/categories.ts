@@ -28,7 +28,7 @@ export const CATEGORIES: Category[] = [
   {
     key: "image",
     name: "Image",
-    count: 7,
+    count: 8,
     active: true,
     bg: "var(--color-cat-image)",
     bgStrong: "var(--color-cat-image-strong)",
@@ -63,12 +63,13 @@ export const CATEGORIES: Category[] = [
       { key: "image-bgremove", name: "Background remove", desc: "배경 자동 제거" },
       { key: "image-watermark", name: "Watermark", desc: "텍스트·이미지 워터마크" },
       { key: "image-downsample", name: "Downsample", desc: "해상도 축소" },
+      { key: "image-to-pdf", name: "Image → PDF", desc: "이미지를 PDF로 변환" },
     ],
   },
   {
     key: "pdf",
     name: "PDF",
-    count: 6,
+    count: 7,
     active: true,
     bg: "var(--color-cat-pdf)",
     bgStrong: "var(--color-cat-pdf-strong)",
@@ -110,6 +111,7 @@ export const CATEGORIES: Category[] = [
       { key: "pdf-crop", name: "Crop pages", desc: "여백 잘라내기" },
       { key: "pdf-rotate", name: "Rotate", desc: "90 / 180° 회전" },
       { key: "pdf-compress", name: "Compress", desc: "용량 줄이기", beta: true },
+      { key: "pdf-to-image", name: "PDF → Image", desc: "PDF를 이미지로 변환" },
     ],
   },
   {
